@@ -64,6 +64,35 @@ static void process_free(process_t *proc) {
 	free(proc);
 }
 
+
+/* Helper function to insert the node in relation to surrounding nodeas based on increasing deadline */
+static void sortedInsert(process_t ** head, process_t * added) {
+	process_t * current;
+	if (*head == NULL || (*head)->deadline >= added->deadline) {
+		added->next = *head;
+		*head = added;
+	} else {
+		current = *head;
+		while (current->next != NULL && current->next->deadline < added->deadline) {
+			current = current->next;
+		}
+		added->next = current->next;
+		current->next = added;
+	}
+}
+
+/* Helper function to sort ready_rt_queue in order of increasing deadlines */
+static void edf_sort(process_t **proc) {
+	process_t * sorted = NULL;
+	process_t * tmp = *proc;
+	while (tmp != NULL) {
+		sortedInsert(&sorted, tmp);
+		tmp = tmp->next;
+	}
+	*proc = sorted;
+}
+
+
 /* Called by the runtime system to select another process.
    "cursp" = the stack pointer for the currently running process
 */
@@ -103,36 +132,25 @@ unsigned int * process_select (unsigned int * cursp) {
 			ready_process->next = NULL;
 			ready_tail = ready_process;
 		}
+		edf_sort(&ready_rt_queue); // sorts ready_rt_queue from earliest to latest deadline
 		//select the realtime process in ready_rt_queue with the earliest deadline
-		realtime_t * min_deadline = ready_rt_queue->deadline;
-		process_t * edf_process = ready_rt_queue;
-		process_t * temp = ready_rt_queue;
-		while (temp->next != NULL) {
-			if ((temp->deadline->sec < min_deadline->sec) || (temp->deadline->sec == min_deadline->sec && temp->deadline->msec < min_deadline->msec)) { 
-				min_deadline = temp->deadline;
-				edf_process = temp;
-			}
-			temp = temp->next;
-		}
-		current_process = edf_process;
-		return edf_process->sp;
+		current_process = ready_rt_queue;
+		ready_rt_queue = ready_rt_queue->next;
+		current_process->next = NULL;
+		return current_process->sp;
 	}	
-	// Select the new current process from the front of the queue
-	current_process = pop_front_process();
 	
 	if (current_process) {
-		// Launch the process which was just popped off the queue
+		// Launch the process that was just taken off the ready_queue
 		return current_process->sp;
-	} else if (unready_rt_queue != NULL) { //no ready process, but still processes left to run in unready_rt_queue
-		unsigned int time_left = 0; //time left in seconds from current time to when first unready process can start
-		time_left = (unready_rt_queue->start->sec - current_time.sec) + (1/1000)*(unready_rt_queue->start->msec - current_time.msec);
-		
-		PIT->CHANNEL[0].LDVAL = DEFAULT_SYSTEM_CLOCK / time_left; //TO DO: LOAD TIME LEFT PROPERLY !!!! !!!! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		
-		NVIC_EnableIRQ(PIT0_IRQn);
-		//TO DO: FIGURE OUT WHAT GOES BETWEEN THE TIMER ENABLE AND DISABLE, SO THAT THE TIMER RUNS
+	} else if (process_queue != NULL) {
+		// Select the new current process from the front of process_queue
+		// Only taken if no realtime processes are ready
+		current_process = pop_front_process();
+		return current_process->sp;
 	} else {
 		// No process was selected, exit the scheduler
+		// No realtime processes were ready and the normal process_queue was empty
 		return NULL;
 	}
 }
@@ -146,7 +164,7 @@ void process_start (void) {
 	// Don't enable the timer yet. The scheduler will do so itself
 	
 	//Generates interrupts every millisecond and updates the current time
-	PIT->CHANNEL[1].LDVAL = DEFAULT_SYSTEM_CLOCK / 21000;     //0.001 secs 
+	PIT->CHANNEL[1].LDVAL = DEFAULT_SYSTEM_CLOCK / 1000;     //0.001 secs 
 	NVIC_EnableIRQ(PIT1_IRQn);
 	current_time.sec = 0;
 	current_time.msec = 0;
@@ -156,6 +174,18 @@ void process_start (void) {
 	process_begin();
 }
 
+void PIT1_IRQHandler(void) {
+	PIT->CHANNEL[1].TFLG = PIT_TFLG_TIF_MASK;  //clear flags
+	PTE->PCOR = (1<<26); 
+	PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;         //timer disable
+	PIT->CHANNEL[1].LDVAL = DEFAULT_SYSTEM_CLOCK / 1000;  //load 0.001 seconds into timer
+	PIT->CHANNEL[1].TCTRL |= PIT_TCTRL_TEN_MASK; 
+	current_time.msec = current_time.msec + 1;
+	if (current_time.msec > 999) {
+		current_time.sec = current_time.sec + 1;
+		current_time.msec = 0;
+	}
+}
 /* Create a new process */
 int process_create (void (*f)(void), int n) {
 	unsigned int *sp = process_stack_init(f, n);
