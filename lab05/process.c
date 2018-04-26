@@ -28,9 +28,7 @@ process_t * process_queue = NULL;
 process_t * process_tail = NULL;
 
 process_t * unready_rt_queue = NULL; 
-process_t * unready_tail = NULL;
 process_t * ready_rt_queue = NULL;
-process_t * ready_tail = NULL;
 
 realtime_t current_time;
 
@@ -66,7 +64,7 @@ static void process_free(process_t *proc) {
 
 
 /* Helper function to insert the node in relation to surrounding nodeas based on increasing deadline */
-static void sortedInsert(process_t ** head, process_t * added) {
+static void sortDeadline(process_t ** head, process_t * added) {
 	process_t * current;
 	if (*head == NULL || (*head)->deadline >= added->deadline) {
 		added->next = *head;
@@ -86,7 +84,7 @@ static void edf_sort(process_t **proc) {
 	process_t * sorted = NULL;
 	process_t * tmp = *proc;
 	while (tmp != NULL) {
-		sortedInsert(&sorted, tmp);
+		sortDeadline(&sorted, tmp);
 		tmp = tmp->next;
 	}
 	*proc = sorted;
@@ -97,61 +95,79 @@ static void edf_sort(process_t **proc) {
    "cursp" = the stack pointer for the currently running process
 */
 unsigned int * process_select (unsigned int * cursp) {
-	if (cursp) {
-		// Suspending a process which has not yet finished, save state and make it the tail
-		current_process->sp = cursp;
-		push_tail_process(current_process);
-	} else {
-		// Check if a process was running, free its resources if one just finished
-		if (current_process) {
-			//checks to see whether or not the deadline was met with respect to the current time
-			if ((current_process->deadline->sec > current_time.sec) || (current_process->deadline->sec == current_time.sec && current_process->deadline->msec > current_time.msec)) {
-				process_deadline_met++;
-			} else {
-				process_deadline_miss++;
-			}
-			process_free(current_process);
-		}
-	}
-	
-	//THE PROCESS IS READY IF START IS LATER THAN CURRENT TIME!!!! 
-	//TO DO: FIGURE OUT WHAT TO SET CURRENT TIME TO
-	current_time.sec = 0;
-	current_time.msec = 0;
-	if ((unready_rt_queue->start->sec > current_time.sec) || (unready_rt_queue->start->sec == current_time.sec && unready_rt_queue->start->msec > current_time.msec)) {   //greater or equal??
-		//dequeue the ready process in unready_rt_queue
-		process_t * ready_process = unready_rt_queue; 
+	while (unready_rt_queue != NULL && (1000*(unready_rt_queue->start->sec)+(unready_rt_queue->start->msec) >= 1000*(current_time.sec)+current_time.msec)) {
+		process_t * ready_process = unready_rt_queue;
 		unready_rt_queue = unready_rt_queue->next;
-		ready_process->next = NULL;
-		//enqueue ready_process onto ready_rt_queue
+		ready_process->next = NULL ;
 		if (ready_rt_queue == NULL) { //if ready realtime queue is empty
 			ready_rt_queue = ready_process;
 			ready_rt_queue->next = NULL;
 		} else { //if ready realtime queue isn't empty
-			ready_tail->next = ready_process;
+			process_t * tmp = ready_rt_queue;
+			while (tmp->next != NULL) {
+				tmp = tmp->next;
+			}
+			tmp->next = ready_process;
 			ready_process->next = NULL;
-			ready_tail = ready_process;
 		}
 		edf_sort(&ready_rt_queue); // sorts ready_rt_queue from earliest to latest deadline
-		//select the realtime process in ready_rt_queue with the earliest deadline
+	}
+	
+	if (ready_rt_queue == NULL) {
+		if (current_process->is_realtime == 0) {
+			if (cursp) {
+				// Suspending a process which has not yet finished, save state and make it the tail
+				current_process->sp = cursp;
+				push_tail_process(current_process);
+			} else {
+				// Check if a process was running, free its resources if one just finished
+				if (current_process) {
+					process_free(current_process);
+				}
+			}
+		} else if (current_process->is_realtime == 1) {
+			if (cursp) {
+				current_process->sp = cursp;
+				return current_process->sp;
+				process_deadline_miss++;
+			} else {
+				if (current_process) {
+					process_free(current_process);
+				}
+				process_deadline_met++;
+			}
+		}
+		current_process = pop_front_process(); 
+		if (current_process != NULL) {
+			return current_process->sp;
+		} else {
+			return NULL;
+		}
+		return current_process->sp;
+	} else {
+		if (current_process->is_realtime == 0) {
+			if (cursp) {
+				// Suspending a process which has not yet finished, save state and make it the tail
+				current_process->sp = cursp;
+				push_tail_process(current_process);
+			} else {
+				// Check if a process was running, free its resources if one just finished
+				if (current_process) {
+					process_free(current_process);
+				}
+			}
+		} else if (current_process->is_realtime == 1) {
+			process_t * tmp = ready_rt_queue;
+			while (tmp->next != NULL) {
+				tmp = tmp->next;
+			}
+			current_process->next = NULL;
+			tmp->next = current_process;
+		}
 		current_process = ready_rt_queue;
 		ready_rt_queue = ready_rt_queue->next;
 		current_process->next = NULL;
-		return current_process->sp;
-	}	
-	
-	if (current_process) {
-		// Launch the process that was just taken off the ready_queue
-		return current_process->sp;
-	} else if (process_queue != NULL) {
-		// Select the new current process from the front of process_queue
-		// Only taken if no realtime processes are ready
-		current_process = pop_front_process();
-		return current_process->sp;
-	} else {
-		// No process was selected, exit the scheduler
-		// No realtime processes were ready and the normal process_queue was empty
-		return NULL;
+		return current_process->sp; 
 	}
 }
 
@@ -175,6 +191,7 @@ void process_start (void) {
 }
 
 void PIT1_IRQHandler(void) {
+	__disable_irq();
 	PIT->CHANNEL[1].TFLG = PIT_TFLG_TIF_MASK;  //clear flags
 	PTE->PCOR = (1<<26); 
 	PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;         //timer disable
@@ -185,6 +202,7 @@ void PIT1_IRQHandler(void) {
 		current_time.sec = current_time.sec + 1;
 		current_time.msec = 0;
 	}
+	__enable_irq();
 }
 /* Create a new process */
 int process_create (void (*f)(void), int n) {
@@ -199,9 +217,40 @@ int process_create (void (*f)(void), int n) {
 	
 	proc->sp = proc->orig_sp = sp;
 	proc->n = n;
+	proc->is_realtime = 0; //isn't a realtime process
+	proc->start = NULL;
+	proc->deadline = NULL;
+	proc->next = NULL;
 	
 	push_tail_process(proc);
 	return 0;
+}
+
+/* Helper function to insert the node in relation to surrounding nodeas based on increasing start times */
+static void sortStarttime(process_t ** head, process_t * added) {
+	process_t * current;
+	if (*head == NULL || (*head)->start >= added->start) {
+		added->next = *head;
+		*head = added;
+	} else {
+		current = *head;
+		while (current->next != NULL && current->next->start < added->start) {
+			current = current->next;
+		}
+		added->next = current->next;
+		current->next = added;
+	}
+}
+
+/* Helper function to sort ready_rt_queue in order of increasing start times */
+static void starttime_sort(process_t **proc) {
+	process_t * sorted = NULL;
+	process_t * tmp = *proc;
+	while (tmp != NULL) {
+		sortStarttime(&sorted, tmp);
+		tmp = tmp->next;
+	}
+	*proc = sorted;
 }
 
 /*Creates tasks with real-time constraints*/ 
@@ -220,9 +269,26 @@ int process_rt_create(void(*f)(void), int n, realtime_t *start, realtime_t *dead
 	
 	proc->sp = proc->orig_sp = sp;
 	proc->n = n;
+	proc->is_realtime = 1; //is a realtime process
 	proc->start = start;
+	int total_msec = (1000*start->sec+start->msec)+(1000*deadline->sec+deadline->msec);
+	int total_sec = total_msec / 1000;
+	total_msec = total_msec % 1000;
+	deadline->sec = total_sec;
+	deadline->msec = total_msec;
 	proc->deadline = deadline;
 	
-	push_tail_process(proc);
+	if (unready_rt_queue == NULL) {
+		unready_rt_queue = proc;
+		unready_rt_queue->next = NULL;
+	} else {
+		process_t * tmp = unready_rt_queue;
+		while (tmp->next != NULL) {
+			tmp = tmp->next;
+		}
+		tmp->next = proc;
+		proc->next = NULL;
+	}
+	starttime_sort(&unready_rt_queue);
 	return 0;
 }
