@@ -1,0 +1,15 @@
+.\objects\test_l2.o: test_l2.c
+.\objects\test_l2.o: 3140_concur.h
+.\objects\test_l2.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\test_l2.o: .\RTE\Device\MK64FN1M0VLL12\fsl_device_registers.h
+.\objects\test_l2.o: .\RTE\Device\MK64FN1M0VLL12\MK64F12.h
+.\objects\test_l2.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\core_cm4.h
+.\objects\test_l2.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\test_l2.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\cmsis_version.h
+.\objects\test_l2.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\cmsis_compiler.h
+.\objects\test_l2.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\cmsis_armcc.h
+.\objects\test_l2.o: .\RTE\Device\MK64FN1M0VLL12\system_MK64F12.h
+.\objects\test_l2.o: .\RTE\Device\MK64FN1M0VLL12\MK64F12_features.h
+.\objects\test_l2.o: utils.h
+.\objects\test_l2.o: lock.h
+.\objects\test_l2.o: shared_structs.h

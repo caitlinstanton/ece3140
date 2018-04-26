@@ -1,0 +1,83 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: µVision V5.24.2.0
+Copyright (C) 2017 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Ho-Jung Yang, Cornell, LIC=----
+ 
+Tool Versions:
+Toolchain:       MDK-Lite  Version: 5.24.1
+Toolchain Path:  C:\Keil_v5\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.06 update 5 (build 528)
+Assembler:       Armasm.exe V5.06 update 5 (build 528)
+Linker/Locator:  ArmLink.exe V5.06 update 5 (build 528)
+Library Manager: ArmAr.exe V5.06 update 5 (build 528)
+Hex Converter:   FromElf.exe V5.06 update 5 (build 528)
+CPU DLL:         SARMCM3.DLL V5.24.1
+Dialog DLL:      DCM.DLL V1.16.0.0
+Target DLL:      CMSIS_AGDI.dll V1.28.3.0
+Dialog DLL:      TCM.DLL V1.32.0.0
+ 
+<h2>Project:</h2>
+C:\Users\hojun\Desktop\Ho-Jung\College\Sophomore\CS 3420\3140lab4\Lab4.uvprojx
+Project File Date:  04/12/2018
+
+<h2>Output:</h2>
+*** Using Compiler 'V5.06 update 5 (build 528)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
+Rebuild target 'Target 1'
+assembling 3140.s...
+3140.s(102): warning: A1581W: Added 2 bytes of padding at address 0x72
+compiling utils.c...
+compiling process.c...
+process.c(141): warning:  #1-D: last line of file ends without a newline
+  }
+process.c: 1 warning, 0 errors
+compiling 3140_concur.c...
+compiling lock.c...
+compiling cond.c...
+compiling test_c2.c...
+test_c2.c(101): warning:  #111-D: statement is unreachable
+  	return 0;
+test_c2.c: 1 warning, 0 errors
+assembling startup_MK64F12.s...
+compiling system_MK64F12.c...
+linking...
+Program Size: Code=2476 RO-data=1056 RW-data=44 ZI-data=2048  
+".\Objects\Lab4.axf" - 0 Error(s), 3 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                http://www.keil.com/pack/ARM.CMSIS.5.2.0.pack
+                ARM.CMSIS.5.2.0
+                CMSIS (Cortex Microcontroller Software Interface Standard)
+   * Component: CORE Version: 5.0.2
+
+Package Vendor: NXP
+                http://mcuxpresso.nxp.com/cmsis_pack/repo/NXP.MK64F12_DFP.10.0.0.pack
+                NXP.MK64F12_DFP.10.0.0
+                Device Family Pack for MK64F12
+   * Component: Startup Version: 1.0.0
+
+<h2>Collection of Component include folders:</h2>
+  .\RTE\Device\MK64FN1M0VLL12
+  .\RTE\_Target_1
+  C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include
+
+<h2>Collection of Component Files used:</h2>
+
+   * Component: NXP::Device:Startup:1.0.0
+      Include file:  MK64F12_features.h
+      Source file:   system_MK64F12.c
+      Include file:  fsl_device_registers.h
+      Include file:  system_MK64F12.h
+      Source file:   arm\startup_MK64F12.s
+      Include file:  MK64F12.h
+
+   * Component: ARM::CMSIS:CORE:5.0.2
+Build Time Elapsed:  00:00:05
+</pre>
+</body>
+</html>

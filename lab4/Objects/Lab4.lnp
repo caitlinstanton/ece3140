@@ -1,0 +1,14 @@
+--cpu=Cortex-M4 --fpu=SoftVFP --scatter "./RTE/Device/MK64FN1M0VLL12/MK64FN1M0xxx12_flash.scf"
+".\objects\3140_concur.o"
+".\objects\utils.o"
+".\objects\3140.o"
+".\objects\process.o"
+".\objects\lock.o"
+".\objects\cond.o"
+".\objects\test_c2.o"
+".\objects\startup_mk64f12.o"
+".\objects\system_mk64f12.o"
+--library_type=microlib --strict --scatter ".\RTE\Device\MK64FN1M0VLL12\MK64FN1M0xxx12_flash.scf"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Listings\Lab4.map" -o .\Objects\Lab4.axf

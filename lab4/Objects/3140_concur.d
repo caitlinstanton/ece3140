@@ -1,0 +1,12 @@
+.\objects\3140_concur.o: 3140_concur.c
+.\objects\3140_concur.o: 3140_concur.h
+.\objects\3140_concur.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\3140_concur.o: .\RTE\Device\MK64FN1M0VLL12\fsl_device_registers.h
+.\objects\3140_concur.o: .\RTE\Device\MK64FN1M0VLL12\MK64F12.h
+.\objects\3140_concur.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\core_cm4.h
+.\objects\3140_concur.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\3140_concur.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\cmsis_version.h
+.\objects\3140_concur.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\cmsis_compiler.h
+.\objects\3140_concur.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\cmsis_armcc.h
+.\objects\3140_concur.o: .\RTE\Device\MK64FN1M0VLL12\system_MK64F12.h
+.\objects\3140_concur.o: .\RTE\Device\MK64FN1M0VLL12\MK64F12_features.h

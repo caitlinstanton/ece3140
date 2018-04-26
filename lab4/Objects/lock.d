@@ -1,0 +1,14 @@
+.\objects\lock.o: lock.c
+.\objects\lock.o: lock.h
+.\objects\lock.o: 3140_concur.h
+.\objects\lock.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\lock.o: .\RTE\Device\MK64FN1M0VLL12\fsl_device_registers.h
+.\objects\lock.o: .\RTE\Device\MK64FN1M0VLL12\MK64F12.h
+.\objects\lock.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\core_cm4.h
+.\objects\lock.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\lock.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\cmsis_version.h
+.\objects\lock.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\cmsis_compiler.h
+.\objects\lock.o: C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.2.0\CMSIS\Include\cmsis_armcc.h
+.\objects\lock.o: .\RTE\Device\MK64FN1M0VLL12\system_MK64F12.h
+.\objects\lock.o: .\RTE\Device\MK64FN1M0VLL12\MK64F12_features.h
+.\objects\lock.o: shared_structs.h
