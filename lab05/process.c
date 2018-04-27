@@ -94,6 +94,21 @@ static void edf_sort(process_t **proc) {
 	*proc = sorted;
 }
 
+/* Helper function to insert the node in relation to surrounding nodeas based on increasing start times */
+static void sortStarttime(process_t ** head, process_t * added) {
+	process_t * current; 
+	if (*head == NULL || (*head)->start >= added->start) {
+		added->next = *head;
+		*head = added;
+	} else {
+		current = *head;
+		while (current->next != NULL && current->next->start < added->start) {
+			current = current->next;
+		}
+		added->next = current->next;
+		current->next = added; 
+	}
+}
 
 /* Called by the runtime system to select another process.
    "cursp" = the stack pointer for the currently running process
@@ -164,13 +179,7 @@ unsigned int * process_select (unsigned int * cursp) {
 			}
 		} else if (current_process->is_realtime == 1) {
 			if (cursp) {
-				current_process->sp = cursp;
-				process_t * tmp = ready_rt_queue;
-				while (tmp->next != NULL) {
-					tmp = tmp->next;
-				}
-				current_process->next = NULL;
-				tmp->next = current_process;
+				sortStarttime(&ready_rt_queue, current_process);
 			} else {
 				if (current_process) {
 					if (1000*current_time.sec+current_time.msec > 1000*current_process->deadline->sec+current_process->deadline->msec) {
@@ -178,25 +187,15 @@ unsigned int * process_select (unsigned int * cursp) {
 					} else {
 						process_deadline_met++;
 					}
-
 					process_free(current_process);
-
 				}
-
 			}
-
 		}
-
 		current_process = ready_rt_queue;
-
 		ready_rt_queue = ready_rt_queue->next;
-
 		current_process->next = NULL;
-
 		return current_process->sp; 
-
 	}
-
 } 
 
 /* Starts up the concurrent execution */
@@ -257,22 +256,6 @@ int process_create (void (*f)(void), int n) {
 	
 	push_tail_process(proc);
 	return 0;
-}
-
-/* Helper function to insert the node in relation to surrounding nodeas based on increasing start times */
-static void sortStarttime(process_t ** head, process_t * added) {
-	process_t * current; 
-	if (*head == NULL || (*head)->start >= added->start) {
-		added->next = *head;
-		*head = added;
-	} else {
-		current = *head;
-		while (current->next != NULL && current->next->start < added->start) {
-			current = current->next;
-		}
-		added->next = current->next;
-		current->next = added; 
-	}
 }
 
 /*Creates tasks with real-time constraints*/ 
