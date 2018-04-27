@@ -129,12 +129,15 @@ unsigned int * process_select (unsigned int * cursp) {
 			if (cursp) {
 				current_process->sp = cursp;
 				return current_process->sp;
-				process_deadline_miss++;
 			} else {
 				if (current_process) {
+					if (1000*current_time.sec+current_time.msec < 1000*current_process->deadline->sec+current_process->deadline->msec) {
+						process_deadline_miss++;
+					} else {
+						process_deadline_met++;
+					}
 					process_free(current_process);
 				}
-				process_deadline_met++;
 			}
 		}
 		current_process = pop_front_process(); 
@@ -143,7 +146,6 @@ unsigned int * process_select (unsigned int * cursp) {
 		} else {
 			return NULL;
 		}
-		return current_process->sp;
 	} else {
 		if (current_process->is_realtime == 0) {
 			if (cursp) {
@@ -157,12 +159,24 @@ unsigned int * process_select (unsigned int * cursp) {
 				}
 			}
 		} else if (current_process->is_realtime == 1) {
-			process_t * tmp = ready_rt_queue;
-			while (tmp->next != NULL) {
-				tmp = tmp->next;
+			if (cursp) {
+				current_process->sp = cursp;
+				process_t * tmp = ready_rt_queue;
+				while (tmp->next != NULL) {
+					tmp = tmp->next;
+				}
+				current_process->next = NULL;
+				tmp->next = current_process;
+			} else {
+				if (current_process) {
+					if (1000*current_time.sec+current_time.msec < 1000*current_process->deadline->sec+current_process->deadline->msec) {
+						process_deadline_miss++;
+					} else {
+						process_deadline_met++;
+					}
+					process_free(current_process);
+				}
 			}
-			current_process->next = NULL;
-			tmp->next = current_process;
 		}
 		current_process = ready_rt_queue;
 		ready_rt_queue = ready_rt_queue->next;
