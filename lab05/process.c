@@ -1,6 +1,7 @@
 #include "realtime.h"
 #include "3140_concur.h" 
 #include <fsl_device_registers.h>
+#include "utils.h"
 
 // The process_t structure definition
 struct process_state {
@@ -64,6 +65,7 @@ static void process_free(process_t *proc) {
 
 
 /* Helper function to insert the node in relation to surrounding nodeas based on increasing deadline */
+
 static void sortDeadline(process_t ** head, process_t * added) {
 	process_t * current;
 	if (*head == NULL || (*head)->deadline >= added->deadline) {
@@ -79,7 +81,9 @@ static void sortDeadline(process_t ** head, process_t * added) {
 	}
 }
 
+
 /* Helper function to sort ready_rt_queue in order of increasing deadlines */
+
 static void edf_sort(process_t **proc) {
 	process_t * sorted = NULL;
 	process_t * tmp = *proc;
@@ -94,8 +98,9 @@ static void edf_sort(process_t **proc) {
 /* Called by the runtime system to select another process.
    "cursp" = the stack pointer for the currently running process
 */
+
 unsigned int * process_select (unsigned int * cursp) {
-	while (unready_rt_queue != NULL && (1000*(unready_rt_queue->start->sec)+(unready_rt_queue->start->msec) >= 1000*(current_time.sec)+current_time.msec)) {
+	while (unready_rt_queue != NULL && (1000*(unready_rt_queue->start->sec)+(unready_rt_queue->start->msec) <= 1000*(current_time.sec)+current_time.msec)) {
 		process_t * ready_process = unready_rt_queue;
 		unready_rt_queue = unready_rt_queue->next;
 		ready_process->next = NULL ;
@@ -112,7 +117,6 @@ unsigned int * process_select (unsigned int * cursp) {
 		}
 		edf_sort(&ready_rt_queue); // sorts ready_rt_queue from earliest to latest deadline
 	}
-	
 	if (ready_rt_queue == NULL) {
 		if (current_process->is_realtime == 0) {
 			if (cursp) {
@@ -131,7 +135,7 @@ unsigned int * process_select (unsigned int * cursp) {
 				return current_process->sp;
 			} else {
 				if (current_process) {
-					if (1000*current_time.sec+current_time.msec < 1000*current_process->deadline->sec+current_process->deadline->msec) {
+					if (1000*current_time.sec+current_time.msec > 1000*current_process->deadline->sec+current_process->deadline->msec) {
 						process_deadline_miss++;
 					} else {
 						process_deadline_met++;
@@ -169,21 +173,31 @@ unsigned int * process_select (unsigned int * cursp) {
 				tmp->next = current_process;
 			} else {
 				if (current_process) {
-					if (1000*current_time.sec+current_time.msec < 1000*current_process->deadline->sec+current_process->deadline->msec) {
+					if (1000*current_time.sec+current_time.msec > 1000*current_process->deadline->sec+current_process->deadline->msec) {
 						process_deadline_miss++;
 					} else {
 						process_deadline_met++;
 					}
+
 					process_free(current_process);
+
 				}
+
 			}
+
 		}
+
 		current_process = ready_rt_queue;
+
 		ready_rt_queue = ready_rt_queue->next;
+
 		current_process->next = NULL;
+
 		return current_process->sp; 
+
 	}
-}
+
+} 
 
 /* Starts up the concurrent execution */
 void process_start (void) {
@@ -191,23 +205,28 @@ void process_start (void) {
 	PIT->MCR = 0;
 	PIT->CHANNEL[0].LDVAL = DEFAULT_SYSTEM_CLOCK / 10;
 	NVIC_EnableIRQ(PIT0_IRQn);
+	NVIC_SetPriority(PIT0_IRQn, 2);
 	// Don't enable the timer yet. The scheduler will do so itself
 	
 	//Generates interrupts every millisecond and updates the current time
 	PIT->CHANNEL[1].LDVAL = DEFAULT_SYSTEM_CLOCK / 1000;     //0.001 secs 
+	PIT->CHANNEL[1].TCTRL = 3;
 	NVIC_EnableIRQ(PIT1_IRQn);
+	NVIC_SetPriority(PIT1_IRQn, 0);
+	NVIC_EnableIRQ(SVCall_IRQn); 
+	NVIC_SetPriority(SVCall_IRQn, 1);
 	current_time.sec = 0;
 	current_time.msec = 0;
 	
 	// Bail out fast if no processes were ever created
-	if (!process_queue) return;
+	if ((process_queue == NULL) && (ready_rt_queue == NULL) && (unready_rt_queue == NULL)) return;  
 	process_begin();
 }
 
 void PIT1_IRQHandler(void) {
 	__disable_irq();
 	PIT->CHANNEL[1].TFLG = PIT_TFLG_TIF_MASK;  //clear flags
-	PTE->PCOR = (1<<26); 
+	//PTE->PCOR = (1<<26); 
 	PIT->CHANNEL[1].TCTRL &= ~PIT_TCTRL_TEN_MASK;         //timer disable
 	PIT->CHANNEL[1].LDVAL = DEFAULT_SYSTEM_CLOCK / 1000;  //load 0.001 seconds into timer
 	PIT->CHANNEL[1].TCTRL |= PIT_TCTRL_TEN_MASK; 
@@ -242,7 +261,7 @@ int process_create (void (*f)(void), int n) {
 
 /* Helper function to insert the node in relation to surrounding nodeas based on increasing start times */
 static void sortStarttime(process_t ** head, process_t * added) {
-	process_t * current;
+	process_t * current; 
 	if (*head == NULL || (*head)->start >= added->start) {
 		added->next = *head;
 		*head = added;
@@ -252,19 +271,8 @@ static void sortStarttime(process_t ** head, process_t * added) {
 			current = current->next;
 		}
 		added->next = current->next;
-		current->next = added;
+		current->next = added; 
 	}
-}
-
-/* Helper function to sort ready_rt_queue in order of increasing start times */
-static void starttime_sort(process_t **proc) {
-	process_t * sorted = NULL;
-	process_t * tmp = *proc;
-	while (tmp != NULL) {
-		sortStarttime(&sorted, tmp);
-		tmp = tmp->next;
-	}
-	*proc = sorted;
 }
 
 /*Creates tasks with real-time constraints*/ 
@@ -292,17 +300,6 @@ int process_rt_create(void(*f)(void), int n, realtime_t *start, realtime_t *dead
 	deadline->msec = total_msec;
 	proc->deadline = deadline;
 	
-	if (unready_rt_queue == NULL) {
-		unready_rt_queue = proc;
-		unready_rt_queue->next = NULL;
-	} else {
-		process_t * tmp = unready_rt_queue;
-		while (tmp->next != NULL) {
-			tmp = tmp->next;
-		}
-		tmp->next = proc;
-		proc->next = NULL;
-	}
-	starttime_sort(&unready_rt_queue);
+	sortStarttime(&unready_rt_queue, proc); 
 	return 0;
 }
